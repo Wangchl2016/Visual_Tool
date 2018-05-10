@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootswatch/2.3.1/spruce/bootstrap.min.css">
+    <script src="angular.min.js"></script>
+</head>
+
+<body ng-app="myapp">
+    <div ng-controller="ExpressionController">
+        <div class="ng-drop" ondrop="drop(event)" ondragover="allowDrop(event)" style="width: 1000px;height: 400px;">
+            <div ng-repeat="obj in droppedFunction">
+                <div style="display:table-row">
+                <div class="ng-drag">{{obj.name}} </div> 
+                <input style="border: 1px black solid; width:200px; height: 50px; display: inline-block; margin-left: 20px;" 
+                     ng-repeat="arg in obj.args track by $index"
+                     ng-model="$parent.args[$index]"
+                     ng-change="computeFunction(obj)"></input>
+                <div ng-if="$parent.args[obj.length - 1]"><h3>{{$parent.result}}</h3></div>
+                </div>
+            </div>
+
+        </div>
+        <ul class="draggable-objects">
+            <li ng-repeat="obj in draggableFunction">
+                <div class="ng-drag" draggable="true" ondragstart="drag(event)"> {{obj.name}} </div>
+            </li>
+        </ul>
+    </div>
+    <script>
+    angular.module("myapp", [])
+
+        .controller("ExpressionController", function($scope, $window) {
+            $scope.draggableFunction = [function add (x, y) { return parseInt(x) + parseInt(y);}, 
+                                        function subtract(x, y) { return parseInt(x) - parseInt(y);}, 
+                                        function foo (x, y, z) {}, 
+                                        function doSomethingComplicated(x) {} ];
+            $scope.functionIndex = ["add", "subtract", "foo", "doSomethingComplicated"];
+            $scope.droppedFunction = [];
+            $scope.args = [];
+            $scope.result = "";
+            // compute 
+            $scope.computeFunction = function(obj) {
+            	if (obj.name === "add" || obj.name === "subtract")
+            		$scope.result = "result: " + obj.method.apply(null, $scope.args);
+            	else
+            		$scope.result = "";
+            }
+            // drag function
+            $window.drag = function(event) {
+            	var name = event.target.textContent;
+            	if (event.dataTransfer)
+            		event.dataTransfer.setData("dragItem", name);
+            }
+
+            //allow drop
+            $window.allowDrop = function(event) {
+            	event.preventDefault();
+            }
+
+            // drop function
+            $window.drop = function(event) {
+            	$scope.args.splice(0, $scope.args.length);
+               var name = event.dataTransfer.getData("dragItem").trim();
+               var index = $scope.functionIndex.indexOf(name);
+               var data = $scope.draggableFunction[index];
+               var item = {
+                  name : data.name,
+                  method: data,
+                  args : new Array(data.length),
+                  length: data.length
+               }
+               $scope.updateDropArea(item);
+            }
+            
+            // update drop area
+            $scope.updateDropArea = function (item) {
+            	$scope.droppedFunction[0] = item;
+            	$scope.$apply();
+            }
+        });
+    </script>
+</body>
+
+</html>
